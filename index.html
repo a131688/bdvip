@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>《联动会员》</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="referrer" content="no-referrer">
+    <style>
+        /* 全局基础样式 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .app-container {
+            max-width: 750px;
+            margin: 0 auto;
+            background-color: #fff;
+            position: relative;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        img {
+            display: block;
+            width: 100%;
+            height: auto;
+            pointer-events: none;
+            -webkit-touch-callout: none;
+        }
+        .relative-wrap {
+            position: relative;
+            width: 100%;
+        }
+        /* 顶部水平滚动弹幕样式 */
+        .marquee-wrap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+        }
+        .marquee-content {
+            display: flex;
+            white-space: nowrap;
+            animation: scroll-left 50s linear infinite;
+        }
+        .marquee-item {
+            background: rgba(0, 0, 0, 0.4);
+            color: #fff;
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-right: 15px;
+            display: inline-block;
+        }
+        @keyframes scroll-left {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); } 
+        }
+        /* 倒计时样式 */
+        .countdown-overlay {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        .countdown-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .timer-box {
+            display: flex;
+            gap: 10px;
+        }
+        .timer-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .timer-num {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ffb74e, #ff9800);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 5px;
+        }
+        .timer-label {
+            font-size: 12px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        /* 二维码及LOGO叠加样式 */
+        .qrcode-overlay-wrap {
+            position: relative;
+            width: 100%;
+            display: block; 
+        }
+        .overlay-qrcode {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60%; 
+            max-width: 400px;
+            z-index: 5;
+            border: 3px solid #fff;
+            border-radius: 8px;
+            pointer-events: auto;
+        }
+        /* 加载动画 */
+        #loading-mask {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            display: none;
+            justify-content: center; align-items: center;
+        }
+        #loading-mask img {
+            width: 80px;
+            animation: rotate 1.2s linear infinite;
+        }
+        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* 立体3D弹窗样式 */
+        #custom-dialog-mask {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 10000;
+            display: none;
+            justify-content: center; align-items: center;
+        }
+        .dialog-box {
+            width: 80%; 
+            max-width: 320px;
+            background: #fff; 
+            border-radius: 20px;
+            overflow: visible; 
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); 
+            animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: relative;
+        }
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+        .dialog-header {
+            background: linear-gradient(to right, #f8c371, #ff9f00, #f8c371); 
+            padding: 20px 15px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(255, 159, 0, 0.3);
+            z-index: 2;
+        }
+        .dialog-title {
+            color: #fff;
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 2px rgba(189, 100, 0, 0.5);
+        }
+        .dialog-close {
+            position: absolute;
+            top: -15px;
+            right: -10px;
+            width: 36px;
+            height: 36px;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        .dialog-close::before, .dialog-close::after {
+            content: '';
+            position: absolute;
+            width: 18px; height: 3px;
+            background: #999;
+            border-radius: 2px;
+        }
+        .dialog-close::before { transform: rotate(45deg); }
+        .dialog-close::after { transform: rotate(-45deg); }
+        .dialog-content {
+            padding: 30px 20px;
+            text-align: center;
+            font-size: 16px;
+            color: #555;
+            line-height: 1.8;
+        }
+        .dialog-content b {
+            color: #ff5e00;
+            font-size: 20px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .dialog-btn {
+            display: block;
+            width: 85%;
+            margin: 0 auto 25px;
+            padding: 0;
+            height: 50px;
+            line-height: 50px;
+            background: linear-gradient(to bottom, #5cb0ff 0%, #2b8cff 100%);
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 6px 0 #0056b3, 0 10px 10px rgba(0,0,0,0.2); 
+            transition: all 0.1s ease;
+        }
+        .dialog-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #0056b3, 0 0 0 rgba(0,0,0,0);
+        }
+        .clickable-img { pointer-events: auto !important; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <!-- 加载动画 -->
+    <div id="loading-mask">
+        <!-- 👉【可替换直链：加载动画图片】 -->
+        <img src="http://i0.hdslb.com/bfs/article/ae91e7d7eb3fd960fd499143397b12e3393011343.png" alt="Loading">
+    </div>
+
+    <!-- 弹窗 -->
+    <div id="custom-dialog-mask" onclick="closeDialog()">
+        <div class="dialog-box" onclick="event.stopPropagation()">
+            <div class="dialog-close" onclick="closeDialog()"></div>
+            <div class="dialog-header">
+                <div class="dialog-title">温馨提示</div>
+            </div>
+            <div class="dialog-content">
+                <b>领取失败</b>
+                请先扫码参与活动后领取噢<br>
+                <span style="font-size: 13px; color: #999;">（兑换码仅限一次使用）</span>
+            </div>
+            <button class="dialog-btn" onclick="closeDialog()">开心收下</button>
+        </div>
+    </div>
+
+    <!-- 顶部海报 -->
+    <div class="relative-wrap">
+        <!-- 👉【可替换直链：顶部头部海报】 -->
+        <img src="https://i1.hdslb.com/bfs/openticket/202602/5qn1CPPP1769674416640.jpeg" alt="Header">
+        <div class="marquee-wrap">
+            <div class="marquee-content" id="marquee-list"></div>
+        </div>
+    </div>
+
+    <!-- 图片1 -->
+    <!-- 👉【可替换直链：第一张宣传图】 -->
+    <img src="https://i1.hdslb.com/bfs/openticket/202602/dvZKwheU1770952506114.png" alt="Image">
+
+    <!-- 倒计时区域 -->
+    <div class="relative-wrap">
+        <!-- 👉【可替换直链：倒计时背景图】 -->
+        <img src="https://i1.hdslb.com/bfs/openticket/202602/hafzucyx1770955504006.png" alt="Countdown BG">
+        <div class="countdown-overlay">
+            <div class="countdown-title">距离活动结束仅剩</div>
+            <div class="timer-box">
+                <div class="timer-item"><div class="timer-num" id="d">00</div><div class="timer-label">天</div></div>
+                <div class="timer-item"><div class="timer-num" id="h">00</div><div class="timer-label">时</div></div>
+                <div class="timer-item"><div class="timer-num" id="m">00</div><div class="timer-label">分</div></div>
+                <div class="timer-item"><div class="timer-num" id="s">00</div><div class="timer-label">秒</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 图片2 -->
+    <!-- 👉【可替换直链：第二张宣传图】 -->
+    <img src="https://i0.hdslb.com/bfs/openticket/202602/vvs0f4Tb1771062533071.png" alt="Image">
+
+    <!-- 二维码核心区域（已删除LOGO） -->
+    <div class="qrcode-overlay-wrap">
+        <!-- 👉【可替换直链：二维码底部背景图】 -->
+        <img src="https://p0.qhimg.com/d/form_1a587aec-d0bb-65f1-c797-060b33b63f6d.jpg" alt="QR BG">
+        
+        <!-- 👉【可替换直链：二维码图片】 -->
+        <img src="https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAESsDZp0p5ogBoHdIEJA0ywraHR-C0VFgACByYAAlDQkFaQjX_wimCm6jsE.jpg" class="overlay-qrcode" alt="QR Code">
+    </div>
+
+    <!-- 图片3 -->
+    <!-- 👉【可替换直链：第三张宣传图】 -->
+    <img src="https://i1.hdslb.com/bfs/openticket/202602/kp8eHWlB1770943951985.png" alt="Image">
+
+    <!-- 点击领取按钮 -->
+    <!-- 👉【可替换直链：点击领取按钮图】 -->
+    <img src="https://i1.hdslb.com/bfs/openticket/202602/PbpNZiTT1770951733541.png" class="clickable-img" onclick="handleClick()" alt="点击领取">
+
+</div>
+
+<script>
+    // 弹幕数据
+    const bulletData = [
+        "用户152****2854领取腾讯视频VIP会员成功！",
+        "用户188****9792领取腾讯视频VIP会员成功！",
+        "用户135****6789领取迅雷超级会员成功！",
+        "用户189****1234领取爱奇艺VIP会员成功！",
+        "用户151****2345领取爱奇艺视频会员成功！",
+        "用户188****6789领取优酷视频会员成功！",
+        "用户139****4567领取芒果TV会员成功！",
+        "用户138****8901领取腾讯视频会员成功！",
+        "用户159****3456领取夸克会员成功！",
+        "用户134****7890领取迅雷会员成功！"
+    ];
+    // 倒计时截止时间
+    const targetDateStr = "2026/05/03 23:59:59";
+    // 初始化弹幕
+    function initMarquee() {
+        const container = document.getElementById('marquee-list');
+        let html = '';
+        bulletData.forEach(text => { html += `<div class="marquee-item">${text}</div>`; });
+        container.innerHTML = html + html;
+    }
+    // 初始化倒计时
+    function startCountdown() {
+        const endDate = new Date(targetDateStr).getTime();
+        const els = { d: document.getElementById('d'), h: document.getElementById('h'), m: document.getElementById('m'), s: document.getElementById('s') };
+        function update() {
+            const now = new Date().getTime(), diff = endDate - now;
+            if (diff <= 0) { Object.values(els).forEach(e => e.innerText = '00'); return; }
+            els.d.innerText = Math.floor(diff / 86400000).toString().padStart(2, '0');
+            els.h.innerText = Math.floor((diff % 86400000) / 3600000).toString().padStart(2, '0');
+            els.m.innerText = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            els.s.innerText = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+        }
+        update(); setInterval(update, 1000);
+    }
+    // 点击领取触发逻辑
+    function handleClick() {
+        const loader = document.getElementById('loading-mask'), dialog = document.getElementById('custom-dialog-mask');
+        loader.style.display = 'flex';
+        setTimeout(() => { loader.style.display = 'none'; dialog.style.display = 'flex'; }, 1000);
+    }
+    // 关闭弹窗
+    function closeDialog() { document.getElementById('custom-dialog-mask').style.display = 'none'; }
+    // 页面加载初始化
+    window.onload = function() { initMarquee(); startCountdown(); };
+</script>
+</body>
+</html>
